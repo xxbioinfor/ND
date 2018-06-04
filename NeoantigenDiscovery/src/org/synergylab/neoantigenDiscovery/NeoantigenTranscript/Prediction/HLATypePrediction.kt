@@ -1,0 +1,3 @@
+package org.synergylab.neoantigenDiscovery.NeoantigenTranscript.Prediction
+
+//由bam格式文件,使用seq2HLA预测HLA分型

@@ -1,0 +1,3 @@
+package org.synergylab.neoantigenDiscovery.NeoantigenTranscript.DeNovo
+
+//trinity从头拼接的转录本表达量信息
