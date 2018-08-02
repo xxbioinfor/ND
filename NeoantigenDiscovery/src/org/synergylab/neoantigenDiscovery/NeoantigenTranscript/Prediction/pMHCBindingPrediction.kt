@@ -1,3 +1,0 @@
-package org.synergylab.neoantigenDiscovery.NeoantigenTranscript.Prediction
-
-//预测peptide与MHC结合亲和力
