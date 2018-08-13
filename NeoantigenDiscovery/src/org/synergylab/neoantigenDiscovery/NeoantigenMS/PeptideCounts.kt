@@ -25,7 +25,7 @@ import java.io.File
         //val peptideTranscriptFilePath = ProjectPath.msDir+"peptideTranscript.txt"
         val peptideTranscriptFilePath = "/Users/toby/Desktop/neoantigenData/peptideTranscript_2.txt"
 
-        val re_spec = "<spectrum_query spectrum=\"(.*?)\"" 
+        val re_spec = "<spectrum_query spectrum=\"(.*?)\""
         val re_search = "<search_hit"
         val re_pep = "peptide=\"(.*?)\""
         val re_pro = "protein=\"(.*?)\""

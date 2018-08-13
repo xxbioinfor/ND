@@ -2,6 +2,7 @@ package org.synergylab.neoantigenDiscovery.NeoantigenTranscript.PostProcess
 
 import org.synergylab.neoantigenDiscovery.utils.appendFile
 import org.synergylab.neoantigenDiscovery.utils.getFileLines
+import org.synergylab.neoantigenDiscovery.utils.getSpecificSubUtilSimple
 import org.synergylab.neoantigenDiscovery.utils.getSubUtilSimple
 
 
@@ -18,8 +19,8 @@ import org.synergylab.neoantigenDiscovery.utils.getSubUtilSimple
     //val peptideFasta = generatePeptideFasta()
 
     //function
-    fun generatePeptideFasta(): String {
-        val mutatedTranscriptFileName = "/Users/toby/Desktop/neoantigenData/MutatedTranscript_pepCounts1.0.txt"
+    fun generatePeptideFasta():String {
+        val mutatedTranscriptFileName = "/Users/toby/Desktop/neoantigenData/MutatedTranscript_all.txt"
         val mutatedTranscriptFile = getFileLines(mutatedTranscriptFileName)
         val mutatedTranscriptSize = mutatedTranscriptFile.size
 
@@ -27,23 +28,25 @@ import org.synergylab.neoantigenDiscovery.utils.getSubUtilSimple
         val peptideReferenceFile = getFileLines(peptideReferenceFileName)
         val peptideReferenceSize = peptideReferenceFile.size
 
+        val peptideFastaOutFileName = "/Users/toby/Desktop/neoantigenData/peptideFasta_8.fasta"
         val peptideReferenceMap = HashMap<String,String>()
         var transcriptID = ""
+        val re_position = "(.*)-(.*)"
+        var peptideNum = 0
         for (i in 0 until peptideReferenceSize){
             val peptideReferenceLine = peptideReferenceFile.get(i)
             if (peptideReferenceLine.startsWith(">")){
                 transcriptID = getSubUtilSimple(peptideReferenceLine,"transcript:(.*)\\.")
             }
-            else peptideReferenceMap.replace(transcriptID,peptideReferenceMap[transcriptID]+peptideReferenceLine)
+            else{
+                if (peptideReferenceMap.containsKey(transcriptID)){
+                    peptideReferenceMap.replace(transcriptID,peptideReferenceMap[transcriptID]+peptideReferenceLine)
+                }
+                else peptideReferenceMap[transcriptID] = peptideReferenceLine
+            }
         }
 
-        val peptideFastaLength = 21
-        var mutatedPeptide = ""
-        var wildPosition = 0
-        var wildPeptide = ""
-        val peptideFastaFileName = "/Users/toby/Desktop/neoantigenData/peptideFasta.fasta"
-
-        for (i in 0 until mutatedTranscriptSize) {
+        for (i in 1 until mutatedTranscriptSize) {
             val mutatedTranscriptLine = mutatedTranscriptFile.get(i)
             val mtTrinityID = mutatedTranscriptLine.split("\t").get(0)
             //val chr = mutatedTranscriptLine.split("\t").get(1)
@@ -57,22 +60,52 @@ import org.synergylab.neoantigenDiscovery.utils.getSubUtilSimple
             //val ref_position_end = mutatedTranscriptLine.split("\t").get(9).toInt()
             val transcript = mutatedTranscriptLine.split("\t").get(10)
             val mutationType = mutatedTranscriptLine.split("\t").get(11)
-            val proteinPosition = mutatedTranscriptLine.split("\t").get(12).toInt()
-            val aminoAcid = mutatedTranscriptLine.split("\t").get(13).split("/").get(1)
+            val proteinPosition = mutatedTranscriptLine.split("\t").get(12)
+            val aminoAcid = mutatedTranscriptLine.split("\t").get(13)
 
-            val wildPeptideResult = generateWildSequence(proteinPosition, peptideReferenceMap[transcript].toString(),peptideFastaLength)
-            wildPeptide = wildPeptideResult.split("\t").get(0)
-            wildPosition = wildPeptideResult.split("\t").get(1).toInt()
-            mutatedPeptide = generateMutatedSequence(wildPosition,wildPeptide,aminoAcid,mutationType)
+            val peptideFastaLength = 15
+            var wildPeptideResult = ""
+            var mutatedPeptide = ""
+            var wildPosition = ""
+            var wildPeptide = ""
 
-            if (!wildPeptide.equals("") && !mutatedPeptide.equals("")){
-                val wildHeader = ">wild "+mtTrinityID+" "+transcript+"\n"
-                val mutatedHeader = ">mutated "+mtTrinityID+" "+transcript+"\n"
-                appendFile(wildHeader+wildPeptide+"\n"+mutatedHeader+mutatedPeptide+"\n",peptideFastaFileName)
+            if (mutationType.equals("missense_variant") || mutationType.equals("inframe_deletion") || mutationType.equals("inframe_insertion")) {
+                if (re_position.toRegex().containsMatchIn(proteinPosition)) {
+                    if (peptideReferenceMap.containsKey(transcript)) {
+                        wildPeptideResult = generateWildSequenceMultiplePosition(proteinPosition, peptideReferenceMap[transcript].toString(), peptideFastaLength)
+                        wildPeptide = wildPeptideResult.split("\t").get(0)
+                        wildPosition = wildPeptideResult.split("\t").get(1)
+                        if (!wildPosition.equals("") && !wildPeptide.equals("") && !aminoAcid.equals("-")) {
+                            mutatedPeptide = generateMutatedSequenceMultiplePosition(wildPosition, wildPeptide, aminoAcid, mutationType)
+                            if (!mutatedPeptide.equals("")) {
+                                peptideNum += 1
+                                val wildHeader = ">wild " + peptideNum + " " + mtTrinityID + " " + transcript + "\n"
+                                val mutatedHeader = ">mutated " + mtTrinityID + " " + transcript + "\n"
+                                appendFile(wildHeader + wildPeptide + "\n" + mutatedHeader + mutatedPeptide + "\n", peptideFastaOutFileName)
+                            }
+                        }
+                    }
+                } else {
+                    if (!proteinPosition.equals("-") && peptideReferenceMap.containsKey(transcript)) {
+                        wildPeptideResult = generateWildSequenceSinglePosition(proteinPosition, peptideReferenceMap[transcript].toString(), peptideFastaLength)
+                        wildPeptide = wildPeptideResult.split("\t").get(0)
+                        wildPosition = wildPeptideResult.split("\t").get(1)
+                        if (!wildPosition.equals("") && !wildPeptide.equals("") && !aminoAcid.equals("-")) {
+                            mutatedPeptide = generateMutatedSequenceSinglePosition(wildPosition.toInt(), wildPeptide, aminoAcid, mutationType)
+                            if (!mutatedPeptide.equals("")) {
+                                peptideNum += 1
+                                val wildHeader = ">wild " + peptideNum + " " + mtTrinityID + " " + transcript + "\n"
+                                val mutatedHeader = ">mutated " + peptideNum + " " + mtTrinityID + " " + transcript + "\n"
+                                appendFile(wildHeader + wildPeptide + "\n" + mutatedHeader + mutatedPeptide + "\n", peptideFastaOutFileName)
+                            }
+                        }
+                    }
+                }
             }
         }
 
-        return peptideFastaFileName
+        return peptideFastaOutFileName
+
     }
 
 
@@ -89,7 +122,7 @@ import org.synergylab.neoantigenDiscovery.utils.getSubUtilSimple
             return (peptideFastaLength-1)/2
     }
 
-    private fun generateWildSequence(position: Int, sequence: String, peptideFastaLength: Int): String {
+    private fun generateWildSequenceSinglePosition(position: String, sequence: String, peptideFastaLength: Int): String {
         //position为蛋白突变位点
         //sequence为蛋白序列
         //peptideFastaLength为肽段全长
@@ -97,24 +130,24 @@ import org.synergylab.neoantigenDiscovery.utils.getSubUtilSimple
         var wildPosition = 0
         var wildResult = ""
 
-        val distanceFromStart = generateDistanceFromStart(position,sequence)
-        val distanceFromEnd = generateDistanceFromEnd(position,sequence)
         val flankingLength = generateFlankingLength(peptideFastaLength)
         val sequenceLength = sequence.length
+        val distanceFromStart = generateDistanceFromStart(position.toInt(),sequence)
+        val distanceFromEnd = generateDistanceFromEnd(position.toInt(),sequence)
 
         if (distanceFromStart < flankingLength){
             wildPeptide = sequence.substring(0..peptideFastaLength)
-            wildPosition = position //突变位于肽段的位置
+            wildPosition = position.toInt() //突变位于肽段的位置
             wildResult = wildPeptide+"\t"+wildPosition
         }
         else if (distanceFromEnd < flankingLength){
             val startPosition = sequenceLength - peptideFastaLength
-            wildPeptide = sequence.substring(startPosition..sequenceLength)
+            wildPeptide = sequence.substring(startPosition-1..sequenceLength-1)
             wildPosition = peptideFastaLength - distanceFromEnd - 1
             wildResult = wildPeptide+"\t"+wildPosition
         }
         else if (distanceFromStart >= flankingLength && distanceFromEnd >= flankingLength){
-            val startPosition = position - flankingLength
+            val startPosition = position.toInt() - flankingLength - 1
             val endPosition = startPosition + peptideFastaLength
             wildPeptide = sequence.substring(startPosition,endPosition)
             wildPosition = flankingLength
@@ -124,25 +157,91 @@ import org.synergylab.neoantigenDiscovery.utils.getSubUtilSimple
 
     }
 
-    private fun generateMutatedSequence(wildPosition: Int,wildPeptide: String,mutationBases: String,mutationType: String): String {
+    private fun generateWildSequenceMultiplePosition(position: String, sequence: String, peptideFastaLength: Int): String {
+        //position为蛋白突变位点
+        //sequence为蛋白序列
+        //peptideFastaLength为肽段全长
+        var wildPeptide = ""
+        var wildPosition_start = 0
+        var wildPosition_end = 0
+        var wildResult = ""
+
+        val flankingLength = generateFlankingLength(peptideFastaLength)
+        val sequenceLength = sequence.length
+        val position_start = position.split("-").get(0)
+        val position_end = position.split("-").get(1)
+        val distanceFromStart = generateDistanceFromStart(position_start.toInt(),sequence)
+        val distanceFromEnd = generateDistanceFromEnd(position_end.toInt(),sequence)
+
+        if (distanceFromStart < flankingLength){
+            wildPeptide = sequence.substring(0..peptideFastaLength)
+            wildPosition_start = position_start.toInt() //突变位于肽段的位置
+            wildPosition_end = position_end.toInt()
+            wildResult = wildPeptide+"\t"+wildPosition_start+"-"+wildPosition_end
+        }
+        else if (distanceFromEnd < flankingLength){
+            val startPosition = sequenceLength - peptideFastaLength
+            wildPeptide = sequence.substring(startPosition..sequenceLength)
+            wildPosition_end = peptideFastaLength - distanceFromEnd - 1
+            wildPosition_start = wildPosition_end - (position_end.toInt() - position_start.toInt())
+           wildResult = wildPeptide+"\t"+wildPosition_start+"-"+wildPosition_end
+        }
+        else if (distanceFromStart >= flankingLength && distanceFromEnd >= flankingLength){
+            val startPosition = position_start.toInt() - flankingLength - 1
+            val endPosition = startPosition + peptideFastaLength
+            wildPeptide = sequence.substring(startPosition,endPosition)
+            wildPosition_start = flankingLength
+            wildPosition_end = wildPosition_start + (position_end.toInt() - position_start.toInt())
+            wildResult = wildPeptide+"\t"+wildPosition_start+"-"+wildPosition_end
+        }
+        return wildResult
+
+}
+
+    private fun generateMutatedSequenceSinglePosition(wildPosition: Int, wildPeptide: String, mutationBases: String, mutationType: String): String {
         //position是指wildPosition
         var mutatedPeptide = ""
 
-        val mutatedBase = mutationBases.split("/").get(1)
-        val BaseNum = mutatedBase.length
-        val sequenceLength = mutatedPeptide.length
+        val mutationBase = mutationBases.split("/").get(1)
+        val baseNum = mutationBase.length
+        val sequenceLength = wildPeptide.length
         val mutationType = mutationType
-        val position = wildPosition
-        val wildPeptide = wildPeptide
+        //val wildPosition = wildPosition
+        //val wildPeptide = wildPeptide
 
         if (mutationType.equals("missense_variant")){
-            mutatedPeptide = wildPeptide.substring(0..position)+mutatedBase+wildPeptide.substring(position+1..sequenceLength)
+            mutatedPeptide = wildPeptide.substring(0..wildPosition-1)+mutationBase+wildPeptide.substring(wildPosition+1..sequenceLength-1)
         }
         if (mutationType.equals("inframe_deletion")){
-            mutatedPeptide = wildPeptide.substring(0..position)+wildPeptide.substring(position+1..sequenceLength+BaseNum)
+            mutatedPeptide = wildPeptide.substring(0..wildPosition)+wildPeptide.substring(wildPosition+1..sequenceLength)
         }
         if (mutationType.equals("inframe_insertion")){
-            mutatedPeptide = wildPeptide.substring(0..position)+mutatedBase+wildPeptide.substring(position+1..sequenceLength-BaseNum)
+            mutatedPeptide = wildPeptide.substring(0..wildPosition)+mutationBase+wildPeptide.substring(wildPosition+1..sequenceLength-2)
+        }
+        return mutatedPeptide
+    }
+
+    private fun generateMutatedSequenceMultiplePosition(wildPosition: String, wildPeptide: String, mutationBases: String, mutationType: String): String {
+        //position是指wildPosition
+        var mutatedPeptide = ""
+        val wildPosition_start = wildPosition.split("-").get(0).toInt()
+        val wildPosition_end = wildPosition.split("-").get(1).toInt()
+
+        val mutationBase = mutationBases.split("/").get(1)
+        val baseNum = mutationBase.length
+        val sequenceLength = wildPeptide.length
+        val mutationType = mutationType
+        //val wildPosition = wildPosition
+        //val wildPeptide = wildPeptide
+
+        if (mutationType.equals("missense_variant")){
+            mutatedPeptide = wildPeptide.substring(0..wildPosition_start-1)+mutationBase+wildPeptide.substring(wildPosition_end+1..sequenceLength-1)
+        }
+        if (mutationType.equals("inframe_deletion")){
+            mutatedPeptide = wildPeptide.substring(0..wildPosition_start-1)+wildPeptide.substring(wildPosition_end+1..sequenceLength-1+baseNum)
+        }
+        if (mutationType.equals("inframe_insertion")){
+            mutatedPeptide = wildPeptide.substring(0..wildPosition_start-1)+mutationBase+wildPeptide.substring(wildPosition_end+1..sequenceLength-1-baseNum)
         }
         return mutatedPeptide
     }
@@ -226,7 +325,7 @@ import org.synergylab.neoantigenDiscovery.utils.getSubUtilSimple
                     var mutatedSequenceResult = ""
 
                     if (trinity_position_end.equals("-") && tc_start <= trinity_position_start && trinity_position_start <= tc_end){
-                        mutatedSequenceResult = generateWildSequence(trinity_position_start,proteinSequenceMap[index].toString(),21)
+                        mutatedSequenceResult = generateWildSequenceSinglePosition(trinity_position_start,proteinSequenceMap[index].toString(),21)
                         mutatedPeptideResult = mutatedSequenceResult.split("\t").get(0)
                         mutationPositionResult = mutatedSequenceResult.split("\t").get(1).toInt()
                     }
@@ -244,7 +343,7 @@ import org.synergylab.neoantigenDiscovery.utils.getSubUtilSimple
 
     }*/
     /*
-    private fun generateMutatedSequence(position: Int, sequence: String, peptideFastaLength: Int): String {
+    private fun generateMutatedSequenceSinglePosition(position: Int, sequence: String, peptideFastaLength: Int): String {
         var mutatedPeptide = ""
         var mutationPosition = 0
         //val resultMap = HashMap<String,Int>()

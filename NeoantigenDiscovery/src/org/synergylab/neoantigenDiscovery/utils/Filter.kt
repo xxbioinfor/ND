@@ -105,3 +105,50 @@ fun filterPeptideCounts(){
         }
     }
 }
+
+fun filterBindingAffinity(): String {
+    //file,hlaType,peptideLength
+    val bindingAffinityFileName = "/Users/toby/Desktop/neoantigenData/180313002ML_8_binding.xls"
+    val bindingAffinityFile = getFileLines(bindingAffinityFileName)
+    val bindingAffinitySize = bindingAffinityFile.size
+
+    val hlaType = "HLA-A0201"
+    var count = hlaType.count { it == ',' }
+    count += 1
+    val bindingAffinityMap = HashMap<String,String>()
+
+    val filterOutFile = "/Users/toby/Desktop/neoantigenData/180313002ML_8_binding_filter.txt"
+
+    if (count == 1) {
+        for (i in 2 until bindingAffinitySize) {
+            val bindingAffinityLine = bindingAffinityFile.get(i)
+            val pos = bindingAffinityLine.split("\t").get(0)
+            val peptide = bindingAffinityLine.split("\t").get(1)
+            val id = bindingAffinityLine.split("\t").get(2)
+            val newID = id.split("_").get(0) + "_" + id.split("_").get(1) + "_" + pos
+            val bindingScore = bindingAffinityLine.split("\t").get(3)
+            bindingAffinityMap[newID] = peptide+"\t"+bindingScore
+        }
+
+        for (i in 2 until bindingAffinitySize){
+            val bindingAffinityLine = bindingAffinityFile.get(i)
+            val pos = bindingAffinityLine.split("\t").get(0)
+            val peptide = bindingAffinityLine.split("\t").get(1)
+            val id = bindingAffinityLine.split("\t").get(2)
+            val idNumber = id.split("_").get(1)
+            val newID = id.split("_").get(0) + "_" + id.split("_").get(1) + "_" + pos
+            val bindingScore = bindingAffinityLine.split("\t").get(3)
+
+            if (newID.startsWith("mutated") && bindingScore.toDouble() < 500.0){
+                val wildID = "wild_"+idNumber+"_"+pos
+                val wildBindingAffinity = bindingAffinityMap[wildID]!!.split("\t").get(1).toDouble()
+                if (wildBindingAffinity >= 500.0){
+                    val wildPeptide = bindingAffinityMap[wildID]!!.split("\t").get(0)
+                    val outLine = newID+"\t"+peptide+"\t"+bindingScore+"\t"+wildID+"\t"+wildPeptide+"\t"+wildBindingAffinity+"\n"
+                    appendFile(outLine,filterOutFile)
+                }
+            }
+        }
+    }
+    return filterOutFile
+}
