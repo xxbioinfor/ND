@@ -16,13 +16,13 @@ import org.synergylab.neoantigenDiscovery.utils.RemoteExecuteCommand
     //val bindingResult = bindingPrediction()
 
     //function
-    fun bindingPrediction(){
+    fun bindingPrediction(peptidesFastaFile: String,hlaType: String,sampleID: String,outDir: String): String {
         //使用NETMHC 4.0进行预测
         //将得到的结果文件进行整理，并按bindingresult的格式输出
-        val hlaType = ""
         val rec = RemoteExecuteCommand(ProjectPath.linuxIP, ProjectPath.linuxName, ProjectPath.linuxPwd)
-        rec.execute(ProjectPath.netMHC+" -a "+hlaType+" -xls -f "+ProjectPath.cancerSampleDir+ProjectPath.sampleID
-                +"_peptides.fsa -xlsfile "+ProjectPath.cancerSampleDir+ProjectPath.sampleID+"_binding.xls")
+        rec.execute(ProjectPath.netMHC+" -a "+hlaType+" -xls -f "+peptidesFastaFile+" -xlsfile "+outDir+sampleID+"_binding.xls")
+
+        return outDir+sampleID+"_binding.xls"
 
     }
 

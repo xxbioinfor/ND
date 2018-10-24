@@ -20,15 +20,21 @@ import java.io.IOException
     }
 */
 
+    fun test(a:Int,b:Int): Int {
+        val result = a+b
+        return result
+
+    }
     fun main(args: Array<String>) {
-        val rec = RemoteExecuteCommand("192.168.6.203", "root", "rlibs402")
+        //val rec = RemoteExecuteCommand("192.168.6.203", "root", "rlibs402")
         //执行命令
         //System.out.println(rec.execute("ifconfig"));
         //执行脚本
         //rec.execute("sh /usr/local/tomcat/bin/statup.sh");
-        rec.execute("perl /localdisk/software/scripts/exam.pl")
+        //rec.execute("perl /localdisk/software/scripts/exam.pl")
         //这个方法与上面最大的区别就是，上面的方法，不管执行成功与否都返回，
         //这个方法呢，如果命令或者脚本执行错误将返回空字符串
         //rec.executeSuccess("ifconfig");
-
+        val result = test(5,8)
+        println(result)
     }

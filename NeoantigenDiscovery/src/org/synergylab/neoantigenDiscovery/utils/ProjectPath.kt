@@ -35,14 +35,20 @@ object ProjectPath{
     val cleanCancerSampleDir = cancerSampleDir + "cleandata/"
     val rawControlSampleDir = controlSampleDir + "rawdata/"
     val cleanControlSampleDir = controlSampleDir + "cleandata/"
-    //val cancerSampleFilePrefix = cancerSampleDir + sampleID
-    //val controlSampleFilePrefix = controlSampleDir + sampleID
     val rawCancerSequence_1 = rawCancerSampleDir + cancerSampleName_1
     val rawCancerSequence_2 = rawCancerSampleDir + cancerSampleName_2
     val rawControlSequence_1 = rawControlSampleDir + controlSampleName_1
     val rawControlSequence_2 = rawControlSampleDir + controlSampleName_2
 
     //创建辅助jobs路径
+    val cancerSamplePicardDir = cancerSampleDir + "picard/"
+    val controlSamplePicardDir = controlSampleDir + "picard/"
+    val cancerSampleGatkDir = cancerSampleDir + "gatk/"
+    val controlSampleGatkDir = controlSampleDir + "gatk/"
+    val mutationDir = sampleBaseDir + "mutation/"
+    val affinityDir = sampleBaseDir + "affinity/"
+    val gmapDir = sampleBaseDir + "gmap/"
+    val peptideDir = sampleBaseDir + "peptide/"
 
     //software
     val fastqc = softwareDir + "FastQC/fastqc"
@@ -74,6 +80,7 @@ object ProjectPath{
     val cosmic = vcfReference + "CosmicCodingMuts.vcf"  //可能用不到
     val adapter = referenceDir + "adapter.fasta"
     val vepReference = referenceDir + ".vep"
+    val pepReference = referenceDir + "Homo_sapiens.GRCh38.pep.all.fa"
 
 }
 

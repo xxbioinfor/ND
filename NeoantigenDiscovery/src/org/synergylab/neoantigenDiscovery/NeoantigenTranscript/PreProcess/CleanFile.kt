@@ -5,11 +5,27 @@ import org.synergylab.neoantigenDiscovery.utils.RemoteExecuteCommand
 
 //将clean.fq数据处理成bam格式
 
-//class CleanFile(){
+class CleanFile(){
+    val rec = RemoteExecuteCommand(ProjectPath.linuxIP,ProjectPath.linuxName,ProjectPath.linuxPwd)
 
-    //val samFile = generateSamFile()
-    //val bamFile = generateBamFile()
+    fun generateSamFile(cleanFile1: String,cleanFile2: String,sampleID: String,outDir: String): String {
 
+        rec.execute(ProjectPath.hisat2+" -p "+ProjectPath.thread+" -x "+ProjectPath.hisat2Index
+                +" -1 "+cleanFile1+" -2 "+cleanFile2+" -S "+outDir+sampleID+".sam")
+        val samFile = outDir+sampleID+".sam"
+        return samFile
+    }
+
+    fun generateBamFile(samFile: String,sampleID: String,outDir: String): String {
+
+        rec.execute(ProjectPath.samtools+" view -S -b "+samFile+" | " +ProjectPath.samtools+" sort | "
+                +ProjectPath.samtools+" view -h | perl -ne 'if(/HI:i:(\\d+)/) { \$m=\$m1-1; \$_ =~ s/HI:i:(\\d+)/HI:i:\$m/} print \$_;' | "
+                +ProjectPath.samtools+" view -bS - > "+outDir+sampleID+".bam")
+        val bamFile = outDir+sampleID+".bam"
+        return bamFile
+    }
+
+    /*
     //function
     fun generateSamFile(){
         val rec = RemoteExecuteCommand(ProjectPath.linuxIP,ProjectPath.linuxName,ProjectPath.linuxPwd)
@@ -37,6 +53,5 @@ import org.synergylab.neoantigenDiscovery.utils.RemoteExecuteCommand
                 +ProjectPath.samtools+" sort | "+ProjectPath.samtools+" view -h | perl -ne 'if(/HI:i:(\\d+)/) { \$m=\$m1-1; \$_ =~ s/HI:i:(\\d+)/HI:i:\$m/} print \$_;' | "
                 +ProjectPath.samtools+" view -bS - > "+ProjectPath.controlSampleDir+ProjectPath.sampleID+"_control.bam")
     }
-
-
-//}
+    */
+}
