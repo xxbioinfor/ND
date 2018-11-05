@@ -20,18 +20,18 @@ class Filter() {
 
         val file = getFileLines(mutationFile)
         val size = file.size
-        val passFile = outDir+"somatic_mutations_pass.txt"
-        val vepSourceFile = outDir+"somatic_mutations_pass.vcf"
+        val passFile = "${outDir}somatic_mutations_pass.txt"
+        val vepSourceFile = "${outDir}somatic_mutations_pass.vcf"
 
-        for (i in 0..size-1) {
+        for (i in 0 until size) {
             val line = file.get(i)
             var outLine = ""
             if (line.startsWith("#")) {
-                outLine = line + "\n"
+                outLine = "${line}\n"
                 appendFile(outLine, vepSourceFile)
             }
-            else if (line.split("\t").get(6).equals("PASS")) {
-                outLine = line + "\n"
+            else if ("PASS".equals(line.split("\t").get(6))) {
+                outLine = "${line}\n"
                 //val outLine = line.split("\t").get(0)+"\t"+line.split("\t").get(1)+"\t"+line.split("\t").get(2)+"\t"+line.split("\t").get(3)+"\t"+line.split("\t").get(4)+"\t"+line.split("\t").get(5)+"\t"+line.split("\t").get(6)+"\t"+line.split("\t").get(7)+"\t"+line.split("\t").get(8)+"\t"+line.split("\t").get(9)+"\n"
                 appendFile(outLine, passFile)
                 appendFile(outLine, vepSourceFile)
@@ -59,11 +59,11 @@ class Filter() {
             val trinityID = trinityLine.split("\t").get(0)
 
             for (j in 0 until rsemSize) {
-                val rsemLine = rsemFile.get(j)
-                val rsemID = rsemLine.split("\t").get(0)
-                val fpkm = rsemLine.split("\t").get(6).toDouble()
+                val rsemLine = rsemFile.get(j).split("\t")
+                val rsemID = rsemLine.get(0)
+                val fpkm = rsemLine.get(6).toDouble()
                 if (trinityID.equals(rsemID) && fpkm >= minFpkm) {
-                    appendFile(trinityLine + "\t" + fpkm + "\n", filterFile)
+                    appendFile("${trinityLine}\t${fpkm}\n", filterFile)
                     continue@loop
                 }
             }
@@ -127,11 +127,11 @@ class Filter() {
             val trinityID = mutatedTranscriptLine.split("\t").get(0)
 
             for (j in 0 until peptideCountsSize) {
-                val peptideLine = peptideCountsFile.get(j)
-                val peptideID = peptideLine.split("\t").get(0)
-                val peptideCounts = peptideLine.split("\t").get(1).toDouble()
+                val peptideLine = peptideCountsFile.get(j).split("\t")
+                val peptideID = peptideLine.get(0)
+                val peptideCounts = peptideLine.get(1).toDouble()
                 if (trinityID.equals(peptideID) && peptideCounts > minCounts) {
-                    appendFile(mutatedTranscriptLine + "\t" + peptideCounts + "\n", filterFile)
+                    appendFile("${mutatedTranscriptLine}\t${peptideCounts}\n", filterFile)
                     continue@loop
                 }
             }
@@ -148,35 +148,38 @@ class Filter() {
         var count = hlaType.count { it == ',' } +1
         val bindingAffinityMap = HashMap<String, String>()
 
-        val filterOutFile = outDir+"180313002ML_binding_filter.txt"
+        val filterOutFile = "${outDir}180313002ML_binding_filter.txt"
 
         if (count == 1) {
             for (i in 2 until bindingAffinitySize) {
                 val bindingAffinityLine = bindingAffinityFile.get(i)
-                val pos = bindingAffinityLine.split("\t").get(0)
-                val peptide = bindingAffinityLine.split("\t").get(1)
-                val id = bindingAffinityLine.split("\t").get(2)
-                val newID = id.split("_").get(0) + "_" + id.split("_").get(1) + "_" + pos
-                val bindingScore = bindingAffinityLine.split("\t").get(3)
-                bindingAffinityMap[newID] = peptide + "\t" + bindingScore
+                val bindingAffinityLineInfo = bindingAffinityLine.split("\t")
+                val pos = bindingAffinityLineInfo.get(0)
+                val peptide = bindingAffinityLineInfo.get(1)
+                val id = bindingAffinityLineInfo.get(2).split("_")
+                val newID = "${id.get(0)}_${id.get(1)}_pos"
+                val bindingScore = bindingAffinityLineInfo.get(3)
+                bindingAffinityMap[newID] = "${peptide}\t${bindingScore}"
             }
 
             for (i in 2 until bindingAffinitySize) {
                 val bindingAffinityLine = bindingAffinityFile.get(i)
-                val pos = bindingAffinityLine.split("\t").get(0)
-                val peptide = bindingAffinityLine.split("\t").get(1)
-                val id = bindingAffinityLine.split("\t").get(2)
-                val idNumber = id.split("_").get(1)
-                val newID = id.split("_").get(0) + "_" + id.split("_").get(1) + "_" + pos
-                val bindingScore = bindingAffinityLine.split("\t").get(3).toDouble()
+                val bindingAffinityLineInfo = bindingAffinityLine.split("\t")
+                val pos = bindingAffinityLineInfo.get(0)
+                val peptide = bindingAffinityLineInfo.get(1)
+                val id = bindingAffinityLineInfo.get(2).split("_")
+                val idNumber = id.get(1)
+                val newID = "${id.get(0)}_${idNumber}_${pos}"
+                val bindingScore = bindingAffinityLineInfo.get(3).toDouble()
 
                 if (newID.startsWith("mutated") && bindingScore < 500.0) {
-                    val wildID = "wild_" + idNumber + "_" + pos
-                    val wildBindingAffinity = bindingAffinityMap[wildID]!!.split("\t").get(1).toDouble()
+                    val wildID = "wild_${idNumber}_${pos}"
+                    val wildBindingAffinityInfo = bindingAffinityMap[wildID]!!.split("\t")
+                    val wildBindingAffinity = wildBindingAffinityInfo.get(1).toDouble()
                     val foldChange = wildBindingAffinity/bindingScore
                     if (wildBindingAffinity >= 500.0) {
-                        val wildPeptide = bindingAffinityMap[wildID]!!.split("\t").get(0)
-                        val outLine = newID + "\t" + peptide + "\t" + bindingScore + "\t" + wildID + "\t" + wildPeptide + "\t" + wildBindingAffinity + "\t" + foldChange + "\n"
+                        val wildPeptide = wildBindingAffinityInfo.get(0)
+                        val outLine = "${newID}\t${peptide}\t${bindingScore}\t${wildID}\t${wildPeptide}\t${wildBindingAffinity}\t${foldChange}\n"
                         appendFile(outLine, filterOutFile)
                     }
                 }

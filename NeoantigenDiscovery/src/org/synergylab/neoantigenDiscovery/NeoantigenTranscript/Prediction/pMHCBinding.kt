@@ -20,9 +20,10 @@ import org.synergylab.neoantigenDiscovery.utils.RemoteExecuteCommand
         //使用NETMHC 4.0进行预测
         //将得到的结果文件进行整理，并按bindingresult的格式输出
         val rec = RemoteExecuteCommand(ProjectPath.linuxIP, ProjectPath.linuxName, ProjectPath.linuxPwd)
-        rec.execute(ProjectPath.netMHC+" -a "+hlaType+" -xls -f "+peptidesFastaFile+" -xlsfile "+outDir+sampleID+"_binding.xls")
+        val netMHC = ProjectPath.netMHC
+        rec.execute("${netMHC} -a ${hlaType} -xls -f ${peptidesFastaFile} -xlsfile ${outDir}${sampleID}_binding.xls")
 
-        return outDir+sampleID+"_binding.xls"
+        return "${outDir}${sampleID}_binding.xls"
 
     }
 

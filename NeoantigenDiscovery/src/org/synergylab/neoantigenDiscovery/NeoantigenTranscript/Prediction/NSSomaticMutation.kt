@@ -2,6 +2,7 @@ package org.synergylab.neoantigenDiscovery.NeoantigenTranscript.Prediction
 
 import org.synergylab.neoantigenDiscovery.utils.ProjectPath
 import org.synergylab.neoantigenDiscovery.utils.RemoteExecuteCommand
+import sun.plugin2.jvm.ProxyJVMLauncher
 
 //由bam文件，经由Picard、GATK、MuTect2、VEP确认非同义体细胞突变
 
@@ -10,53 +11,58 @@ class NSSomaticMutation(){
 
     //source data
     val rec = RemoteExecuteCommand(ProjectPath.linuxIP,ProjectPath.linuxName,ProjectPath.linuxPwd)
-
+    val picard = ProjectPath.picard
+    val hg38Reference = ProjectPath.hg38Reference
+    val gatk = ProjectPath.GATK
+    val omni_1000G = ProjectPath.omni_1000G
+    val dbsnp = ProjectPath.dbsnp
+    val hapmap = ProjectPath.hapmap
+    val thread = ProjectPath.thread
+    val vep = ProjectPath.vep
+    val vepReference = ProjectPath.vepReference
     //class properties
     //val somaticMutation ＝ generateSomaticMutation()
 
     //function
     fun picardCommand(bamFile: String,sampleName: String,sampleID: String,outDir: String): String {
-       rec.execute("java -Xms20g -jar "+ProjectPath.picard+" AddOrReplaceReadGroups INPUT="+bamFile+" OUTPUT="+
-               outDir+sampleID+"_sorted.bam SORT_ORDER=coordinate RGPL=illumina RGLB="+sampleName+" RGPU=temp RGSM="+sampleName)
-       rec.execute("java -Xms20g -jar "+ProjectPath.picard+" MarkDuplicates I="+outDir+sampleID+"_sorted.bam O="
-               +outDir+sampleID+"_duplicateRemoved.bam M=" +outDir+sampleID+"_marked_dup_metrics.txt REMOVE_DUPLICATES=true AS=true")
-       rec.execute("java -Xms20g -jar "+ProjectPath.picard+" ReorderSam I="+outDir+sampleID +"_duplicateRemoved.bam O="
-               +outDir+sampleID+"_Reorder.bam REFERENCE=" +ProjectPath.hg38Reference)
-       rec.execute("java -Xms20g -jar "+ProjectPath.picard+" BuildBamIndex INPUT="+outDir+sampleID+"_Reorder.bam")
+       rec.execute("java -Xms20g -jar ${picard} AddOrReplaceReadGroups INPUT=${bamFile} " +
+               "OUTPUT=${outDir}${sampleID}_sorted.bam SORT_ORDER=coordinate RGPL=illumina RGLB=${sampleName} RGPU=temp RGSM=${sampleName}")
+       rec.execute("java -Xms20g -jar ${picard} MarkDuplicates I=${outDir}${sampleID}_sorted.bam " +
+               "O=${outDir}${sampleID}_duplicateRemoved.bam M=${outDir}${sampleID}_marked_dup_metrics.txt REMOVE_DUPLICATES=true AS=true")
+       rec.execute("java -Xms20g -jar ${picard} ReorderSam I=${outDir}${sampleID}_duplicateRemoved.bam " +
+               "O=${outDir}${sampleID}_Reorder.bam REFERENCE=${hg38Reference}")
+       rec.execute("java -Xms20g -jar ${picard} BuildBamIndex INPUT=${outDir}${sampleID}_Reorder.bam")
 
-       return outDir+sampleID+"_Reorder.bam"
+       return "${outDir}${sampleID}_Reorder.bam"
     }
 
     fun gatkCommand(reorderBamFile: String,sampleID: String,outDir: String): String {
-       rec.execute("java -Xms20g -jar "+ProjectPath.GATK+" -T SplitNCigarReads -R "+ProjectPath.hg38Reference+" -I "
-               +reorderBamFile+" -o "+outDir+sampleID+"_split.bam -rf ReassignOneMappingQuality -RMQF 255 -RMQT 60 -U ALLOW_N_CIGAR_READS")
-       rec.execute("java -Xms20g -jar "+ProjectPath.GATK+" -T RealignerTargetCreator -R "+ProjectPath.hg38Reference
-               +" -I "+outDir+sampleID+"_split.bam --known "+ProjectPath.omni_1000G +" --known "+ProjectPath.dbsnp
-               +" --known "+ProjectPath.hapmap +" --filter_reads_with_N_cigar -o " +outDir+sampleID+".intervals")
-       rec.execute("java -Xms20g -jar "+ProjectPath.GATK+" -T IndelRealigner -R "+ProjectPath.hg38Reference+" -I "
-               +outDir+sampleID+"_Reorder.bam -targetIntervals " +outDir+sampleID+".intervals -known "+ProjectPath.omni_1000G
-               +" -known "+ProjectPath.dbsnp+" -known "+ProjectPath.hapmap +" --filter_reads_with_N_cigar -o "
-               +outDir+sampleID+"_IndelRealign.bam")
-       rec.execute("java -Xms20g -jar "+ProjectPath.GATK+" -T BaseRecalibrator -R "+ProjectPath.hg38Reference+" -I "
-               +outDir+sampleID+"_IndelRealign.bam -knownSites "+ProjectPath.hapmap +" -o "+outDir+sampleID+"_Recal.table -nct "+ProjectPath.thread)
-       rec.execute("java -Xms20g -jar "+ProjectPath.GATK+" -T PrintReads -R "+ProjectPath.hg38Reference+" -I "
-               +outDir+sampleID+"_IndelRealign.bam -BQSR "+outDir +sampleID+"_Recal.table -o "+outDir+sampleID
-               +"_Recal.bam -nct "+ProjectPath.thread)
+       rec.execute("java -Xms20g -jar ${gatk} -T SplitNCigarReads -R ${hg38Reference} -I ${reorderBamFile} " +
+               "-o ${outDir}${sampleID}_split.bam -rf ReassignOneMappingQuality -RMQF 255 -RMQT 60 -U ALLOW_N_CIGAR_READS")
+       rec.execute("java -Xms20g -jar ${gatk} -T RealignerTargetCreator -R ${hg38Reference} " +
+               "-I ${outDir}${sampleID}_split.bam --known ${omni_1000G} --known ${dbsnp} --known ${hapmap} " +
+               "--filter_reads_with_N_cigar -o ${outDir}${sampleID}.intervals")
+       rec.execute("java -Xms20g -jar ${gatk} -T IndelRealigner -R ${hg38Reference} -I ${outDir}${sampleID}_Reorder.bam " +
+               "-targetIntervals " +outDir+sampleID+".intervals -known ${omni_1000G} -known ${dbsnp} -known ${hapmap} " +
+               "--filter_reads_with_N_cigar -o ${outDir}${sampleID}_IndelRealign.bam")
+       rec.execute("java -Xms20g -jar ${gatk} -T BaseRecalibrator -R ${hg38Reference} -I ${outDir}${sampleID}_IndelRealign.bam " +
+               "-knownSites ${hapmap} -o ${outDir}${sampleID}_Recal.table -nct ${thread}")
+       rec.execute("java -Xms20g -jar ${gatk} -T PrintReads -R ${hg38Reference} -I ${outDir}${sampleID}_IndelRealign.bam " +
+               "-BQSR ${outDir}${sampleID}_Recal.table -o ${outDir}${sampleID}_Recal.bam -nct ${thread}")
 
-       return outDir+sampleID+"_Recal.bam"
+       return "${outDir}${sampleID}_Recal.bam"
     }
 
     fun mutect2Command(cancerRecalBamFile: String,controlRecalBamFile: String,outDir: String): String {
-       rec.execute("java -Xms20g -jar "+ProjectPath.GATK+" -T MuTect2 -R "+ProjectPath.hg38Reference+" -I:tumor "
-               +cancerRecalBamFile+" -I:normal "+controlRecalBamFile+" -o " +outDir
-               +"somatic_mutations.vcf -nct "+ProjectPath.thread)
-       return outDir+"somatic_mutations.vcf"
+       rec.execute("java -Xms20g -jar ${gatk} -T MuTect2 -R ${hg38Reference} -I:tumor ${cancerRecalBamFile} " +
+               "-I:normal ${controlRecalBamFile} -o ${outDir}somatic_mutations.vcf -nct ${thread}")
+       return "${outDir}somatic_mutations.vcf"
     }
 
     fun vepCommand(mutationFile: String,outDir: String): String {
-       rec.execute(ProjectPath.vep+" --cache --dir "+ProjectPath.vepReference+" --format vcf --input_file "
-               +mutationFile+" --output_file "+outDir+"somatic_mutations_pass_vep.vcf")
-        return outDir+"somatic_mutations_pass_vep.vcf"
+       rec.execute("${vep} --cache --dir ${vepReference} --format vcf --input_file ${mutationFile} " +
+               "--output_file ${outDir}somatic_mutations_pass_vep.vcf")
+        return "${outDir}somatic_mutations_vep.vcf"
     }
    /*
     //function

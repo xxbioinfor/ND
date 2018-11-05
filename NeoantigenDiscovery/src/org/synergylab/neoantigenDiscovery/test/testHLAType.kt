@@ -5,6 +5,6 @@ import org.synergylab.neoantigenDiscovery.NeoantigenTranscript.Prediction.genera
 fun main(args: Array<String>) {
     println("===== HLA Type =====")
     println(" Generate HLA Type... ")
-    generateHlaType()
+    //generateHlaType()
     println(" Generate HLA Type! ")
 }

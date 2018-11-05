@@ -29,8 +29,8 @@ class PeptideFasta(){
         val peptideReferenceFile = getFileLines(peptideReferenceFileName)
         val peptideReferenceSize = peptideReferenceFile.size
 
-        val peptideFastaOutFileName = outDir+"peptideFasta_"+peptideLength+"_missense.fasta"
-        val errorReportFile = outDir+"peptideFasta_error.txt"
+        val peptideFastaOutFileName = "${outDir}peptideFasta_${peptideLength}_missense.fasta"
+        val errorReportFile = "${outDir}peptideFasta_error.txt"
         val peptideReferenceMap = HashMap<String,String>()
         var transcriptID = ""
         val regexPosition = "(.*)-(.*)"
@@ -51,7 +51,8 @@ class PeptideFasta(){
 
         for (i in 1 until mutatedTranscriptSize) {
             val mutatedTranscriptLine = mutatedTranscriptFile.get(i)
-            val mtTrinityID = mutatedTranscriptLine.split("\t").get(0)
+            val mutatedTranscriptLineInfo = mutatedTranscriptLine.split("\t")
+            val mtTrinityID = mutatedTranscriptLineInfo.get(0)
             //val chr = mutatedTranscriptLine.split("\t").get(1)
             //val alt = mutatedTranscriptLine.split("\t").get(2)
             //val mtStrand = mutatedTranscriptLine.split("\t").get(3)
@@ -61,10 +62,10 @@ class PeptideFasta(){
             //val ref_end = mutatedTranscriptLine.split("\t").get(7).toInt()
             //val ref_position_start = mutatedTranscriptLine.split("\t").get(8).toInt()
             //val ref_position_end = mutatedTranscriptLine.split("\t").get(9).toInt()
-            val transcript = mutatedTranscriptLine.split("\t").get(10)
-            val mutationType = mutatedTranscriptLine.split("\t").get(11)
-            val proteinPosition = mutatedTranscriptLine.split("\t").get(12)
-            val aminoAcid = mutatedTranscriptLine.split("\t").get(13)
+            val transcript = mutatedTranscriptLineInfo.get(10)
+            val mutationType = mutatedTranscriptLineInfo.get(11)
+            val proteinPosition = mutatedTranscriptLineInfo.get(12)
+            val aminoAcid = mutatedTranscriptLineInfo.get(13)
 
             val peptideFastaLength = peptideLength*2-1
             var wildPeptideResult = ""
@@ -73,53 +74,55 @@ class PeptideFasta(){
             var wildPeptide = ""
             var error = ""
 
-            if (mutationType.equals("missense_variant") || mutationType.equals("inframe_deletion") || mutationType.equals("inframe_insertion")) {
+            if ("missense_variant".equals(mutationType) || "inframe_deletion".equals(mutationType) || "inframe_insertion".equals(mutationType)) {
                 if (regexPosition.toRegex().containsMatchIn(proteinPosition)) {
                     if (peptideReferenceMap.containsKey(transcript)) {
                         wildPeptideResult = generateWildSequenceMultiplePosition(proteinPosition, peptideReferenceMap[transcript].toString(), peptideFastaLength)
-                        wildPeptide = wildPeptideResult.split("\t").get(0)
-                        wildPosition = wildPeptideResult.split("\t").get(1)
-                        if (!wildPosition.equals("") && !wildPeptide.equals("") && !aminoAcid.equals("-")) {
+                        val wildPeptideResultInfo = wildPeptideResult.split("\t")
+                        wildPeptide = wildPeptideResultInfo.get(0)
+                        wildPosition = wildPeptideResultInfo.get(1)
+                        if (!"".equals(wildPosition) && !"".equals(wildPeptide) && !"-".equals(aminoAcid)) {
                             mutatedPeptide = generateMutatedSequenceMultiplePosition(wildPosition, wildPeptide, aminoAcid, mutationType)
-                            if (!mutatedPeptide.equals("")) {
+                            if (!"".equals(mutatedPeptide)) {
                                 peptideNum += 1
-                                val wildHeader = ">wild " + peptideNum + " " + mtTrinityID + " " + transcript + "\n"
-                                val mutatedHeader = ">mutated " + peptideNum + " " + mtTrinityID + " " + transcript + "\n"
-                                appendFile(wildHeader + wildPeptide + "\n" + mutatedHeader + mutatedPeptide + "\n", peptideFastaOutFileName)
+                                val wildHeader = ">wild ${peptideNum} ${mtTrinityID} ${transcript}"
+                                val mutatedHeader = ">mutated ${peptideNum} ${mtTrinityID} ${transcript}"
+                                appendFile("${wildHeader}\n${wildPeptide}\n${mutatedHeader}\n${mutatedPeptide}\n", peptideFastaOutFileName)
                             }
                             else{
-                                error = "Error: "+ peptideNum + " " + mtTrinityID + " mutated peptide sequence is null. [peptideLength is " + peptideLength + " ]"
+                                error = "Error: ${peptideNum} ${mtTrinityID} mutated peptide sequence is null. [peptideLength is ${peptideLength}]"
                                 println(error)
                                 appendFile(error,errorReportFile)
                             }
                         }
                         else{
-                            error = "Error: "+ peptideNum + " " + mtTrinityID + " wild peptide sequence is null, or mutation position information is null. [peptideLength is " + peptideLength + " ]"
+                            error = "Error: ${peptideNum} ${mtTrinityID} wild peptide sequence is null, or mutation position information is null. [peptideLength is ${peptideLength}]"
                             println(error)
                             appendFile(error,errorReportFile)
                         }
                     }
                 } else {
-                    if (!proteinPosition.equals("-") && peptideReferenceMap.containsKey(transcript)) {
+                    if (!"-".equals(proteinPosition) && peptideReferenceMap.containsKey(transcript)) {
                         wildPeptideResult = generateWildSequenceSinglePosition(proteinPosition, peptideReferenceMap[transcript].toString(), peptideFastaLength)
-                        wildPeptide = wildPeptideResult.split("\t").get(0)
-                        wildPosition = wildPeptideResult.split("\t").get(1)
-                        if (!wildPosition.equals("") && !wildPeptide.equals("") && !aminoAcid.equals("-")) {
+                        val wildPeptideResultInfo = wildPeptideResult.split("\t")
+                        wildPeptide = wildPeptideResultInfo.get(0)
+                        wildPosition = wildPeptideResultInfo.get(1)
+                        if (!"".equals(wildPosition) && !"".equals(wildPeptide) && !"-".equals(aminoAcid)) {
                             mutatedPeptide = generateMutatedSequenceSinglePosition(wildPosition.toInt(), wildPeptide, aminoAcid, mutationType)
-                            if (!mutatedPeptide.equals("")) {
+                            if (!"".equals(mutatedPeptide)) {
                                 peptideNum += 1
-                                val wildHeader = ">wild " + peptideNum + " " + mtTrinityID + " " + transcript + "\n"
-                                val mutatedHeader = ">mutated " + peptideNum + " " + mtTrinityID + " " + transcript + "\n"
-                                appendFile(wildHeader + wildPeptide + "\n" + mutatedHeader + mutatedPeptide + "\n", peptideFastaOutFileName)
+                                val wildHeader = ">wild ${peptideNum} ${mtTrinityID} ${transcript}"
+                                val mutatedHeader = ">mutated ${peptideNum} ${mtTrinityID} ${transcript}"
+                                appendFile("${wildHeader}\n${wildPeptide}\n${mutatedHeader}\n${mutatedPeptide}\n", peptideFastaOutFileName)
                             }
                             else{
-                                error = "Error: "+ peptideNum + " " + mtTrinityID + " mutated peptide sequence is null. [peptideLength is " + peptideLength + " ]"
+                                error = "Error: ${peptideNum} ${mtTrinityID} mutated peptide sequence is null. [peptideLength is ${peptideLength}]"
                                 println(error)
                                 appendFile(error,errorReportFile)
                             }
                         }
                         else{
-                            error = "Error: "+ peptideNum + " " + mtTrinityID + " wild peptide sequence is null, or mutation position information is null. [peptideLength is " + peptideLength + " ]"
+                            error = "Error: ${peptideNum} ${mtTrinityID} wild peptide sequence is null, or mutation position information is null. [peptideLength is ${peptideLength}]"
                             println(error)
                             appendFile(error,errorReportFile)
                         }
@@ -193,8 +196,9 @@ class PeptideFasta(){
 
         val flankingLength = generateFlankingLength(peptideFastaLength)
         val sequenceLength = sequence.length
-        val position_start = position.split("-").get(0)
-        val position_end = position.split("-").get(1)
+        val positionInfo = position.split("-")
+        val position_start = positionInfo.get(0)
+        val position_end = positionInfo.get(1)
         val distanceFromStart = generateDistanceFromStart(position_start.toInt(),sequence)
         val distanceFromEnd = generateDistanceFromEnd(position_end.toInt(),sequence)
 
@@ -234,10 +238,10 @@ class PeptideFasta(){
         //val wildPosition = wildPosition
         //val wildPeptide = wildPeptide
 
-        if (mutationType.equals("missense_variant")){
+        if ("missense_variant".equals(mutationType)){
             mutatedPeptide = wildPeptide.substring(0..wildPosition - 1)+mutationBase+wildPeptide.substring(wildPosition + 1..sequenceLength - 1)
         }
-        if (mutationType.equals("inframe_deletion")){
+        if ("inframe_deletion".equals(mutationType)){
             mutatedPeptide = wildPeptide.substring(0..wildPosition - 1)+wildPeptide.substring(wildPosition + 1..sequenceLength)
         }
         //if (mutationType.equals("inframe_insertion")){
@@ -249,8 +253,9 @@ class PeptideFasta(){
     private fun generateMutatedSequenceMultiplePosition(wildPosition: String, wildPeptide: String, mutationBases: String, mutationType: String): String {
         //position是指wildPosition
         var mutatedPeptide = ""
-        val wildPosition_start = wildPosition.split("-").get(0).toInt()
-        val wildPosition_end = wildPosition.split("-").get(1).toInt()
+        val wildPositionInfo = wildPosition.split("-")
+        val wildPosition_start = wildPositionInfo.get(0).toInt()
+        val wildPosition_end = wildPositionInfo.get(1).toInt()
 
         val mutationBase = mutationBases.split("/").get(1)
         val baseNum = mutationBase.length
@@ -259,13 +264,13 @@ class PeptideFasta(){
         //val wildPosition = wildPosition
         //val wildPeptide = wildPeptide
 
-        if (mutationType.equals("missense_variant")){
+        if ("missense_variant".equals(mutationType)){
             mutatedPeptide = wildPeptide.substring(0..wildPosition_start - 1)+mutationBase+wildPeptide.substring(wildPosition_end + 1..sequenceLength - 1)
         }
-        if (mutationType.equals("inframe_deletion")){
+        if ("inframe_deletion".equals(mutationType)){
             mutatedPeptide = wildPeptide.substring(0..wildPosition_start - 1)+wildPeptide.substring(wildPosition_end + 1..sequenceLength - 1 + baseNum)
         }
-        if (mutationType.equals("inframe_insertion")){
+        if ("inframe_insertion".equals(mutationType)){
             mutatedPeptide = wildPeptide.substring(0..wildPosition_start - 1)+mutationBase+wildPeptide.substring(wildPosition_end + 1..sequenceLength - 1 - baseNum)
         }
         return mutatedPeptide

@@ -21,7 +21,7 @@ class MutatedTranscript(){
         var file = getFileLines(gmapFile)
         var size = file.size
         //val gmapReferenceFile = ProjectPath.cancerSampleDir+"gmapReference.txt"
-        val gmapReferenceFile= outDir+"gmapReference.txt"
+        val gmapReferenceFile= "${outDir}gmapReference.txt"
 
 
         //gmap参数设置为-A
@@ -49,7 +49,7 @@ class MutatedTranscript(){
             }
             if (regexPath.toRegex().containsMatchIn(line)){
                 path = getSubUtilSimple(line,regexPath)
-                control = when (path.equals("Path 1")){
+                control = when ("Path 1".equals(path)){
                     true -> true
                     false -> false
                 }
@@ -66,7 +66,7 @@ class MutatedTranscript(){
                     refEnd = getSpecificSubUtilSimple(line,regexPosition,2)
                     trinityStart = getSpecificSubUtilSimple(line,regexPosition,3)
                     trinityEnd = getSpecificSubUtilSimple(line,regexPosition,4)
-                    outLine = transcriptId+"\t"+chr+"\t"+strand+"\t"+trinityStart+"\t"+trinityEnd+"\t"+refStart+"\t"+refEnd+"\n"
+                    outLine = "${transcriptId}\t${chr}\t${strand}\t${trinityStart}\t${trinityEnd}\t${refStart}\t${refEnd}\n"
                     appendFile(outLine,gmapReferenceFile)
                 }
             }
@@ -88,21 +88,22 @@ class MutatedTranscript(){
 
         for (i in 0..size-1){
             val line = file.get(i)
+            val lineInfo = line.split(" ")
             if (line.startsWith(">")){
-                transcriptId = line.split(" ").get(0).substring(1)
-                info = line.split(" ").get(9)
+                transcriptId = lineInfo.get(0).substring(1)
+                info = lineInfo.get(9)
                 chr = getSpecificSubUtilSimple(info,re_chr_info,1)
                 refStart = getSpecificSubUtilSimple(info,re_chr_info,2)
                 refEnd = getSpecificSubUtilSimple(info,re_chr_info,3)
-                strand = line.split(" ").get(10)
-                trans_start = line.split(" ").get(7).split("..").get(0)
-                trans_end = line.split(" ").get(7).split("..").get(1)
+                strand = lineInfo.get(10)
+                trans_start = lineInfo.get(7).split("..").get(0)
+                trans_end = lineInfo.get(7).split("..").get(1)
                 if (chr == ""){
                     chr = getSpecificSubUtilSimple(info,re_other_info,1)
                     refStart = getSpecificSubUtilSimple(info,re_other_info,2)
                     refEnd = getSpecificSubUtilSimple(info,re_other_info,3)
                 }
-                outLine = transcriptId+"\t"+chr+"\t"+strand+"\t"+trans_start+"\t"+trans_end+"\t"+refStart+"\t"+refEnd+"\n"
+                outLine = "${transcriptId}\t${chr}\t${strand}\t${trans_start}\t${tran_end}\t${refStart}\t${refEnd}\n"
                 appendFile(outLine,gmapReferenceFile)
             }
         }
@@ -120,7 +121,7 @@ class MutatedTranscript(){
         var annotationFile = getFileLines(annotation)
         val annotationSize = annotationFile.size
         //val MutatedTranscriptFile = ProjectPath.cancerSampleDir+"MutatedTranscript.txt"
-        val MutatedTranscriptFile = outDir+"MutatedTranscript.txt"
+        val MutatedTranscriptFile = "${outDir}MutatedTranscript.txt"
         val header = "TrinityID\tChr\tAlt_Base\tStrand\tTrinity_start\tTrinity_end\tRef_start\tRef_end\tPosition_start\tPosition_end\tTranscript\tMutationType\tProteinPosition\tAminoAcid\tCodons\n"
         appendFile(header, MutatedTranscriptFile)
 
@@ -134,36 +135,38 @@ class MutatedTranscript(){
 
         loop@ for (i in 0 until gmapReferenceSize) {
             val gmapLine = gmapReferenceFile.get(i)
-            val transcriptID_gmap = gmapLine.split("\t").get(0)
-            val chrGmap = gmapLine.split("\t").get(1)
-            val strandGmap = gmapLine.split("\t").get(2)
-            val trinityStartGmap = gmapLine.split("\t").get(3).toInt()
-            val trinityEndGmap = gmapLine.split("\t").get(4).toInt()
-            val refStartGmap = gmapLine.split("\t").get(5).toInt()
-            val refEndGmap = gmapLine.split("\t").get(6).toInt()
+            val gmapLineInfo = gmapLine.split("\t")
+            val transcriptID_gmap = gmapLineInfo.get(0)
+            val chrGmap = gmapLineInfo.get(1)
+            val strandGmap = gmapLineInfo.get(2)
+            val trinityStartGmap = gmapLineInfo.get(3).toInt()
+            val trinityEndGmap = gmapLineInfo.get(4).toInt()
+            val refStartGmap = gmapLineInfo.get(5).toInt()
+            val refEndGmap = gmapLineInfo.get(6).toInt()
 
             for (j in 0 until annotationSize) {
                 val annotationLine = annotationFile.get(j)
+                val annotationLineInfo = annotationLine.split("\t")
                 if (!annotationLine.startsWith("#")) {
-                    val chrom = annotationLine.split("\t").get(1)
-                    val altBase = annotationLine.split("\t").get(2)
+                    val chrom = annotationLineInfo.get(1)
+                    val altBase = annotationLineInfo.get(2)
                     val chrAnno = getSpecificSubUtilSimple(chrom, regexLocation2, 1)
-                    val transcript = annotationLine.split("\t").get(4)
-                    val mutationType = annotationLine.split("\t").get(6)
-                    val proteinPosition = annotationLine.split("\t").get(9)
-                    val aminoAcid = annotationLine.split("\t").get(10)
-                    val codons = annotationLine.split("\t").get(11)
-                    val outInfo = transcript+"\t"+mutationType+"\t"+proteinPosition+"\t"+aminoAcid+"\t"+codons
+                    val transcript = annotationLineInfo.get(4)
+                    val mutationType = annotationLineInfo.get(6)
+                    val proteinPosition = annotationLineInfo.get(9)
+                    val aminoAcid = annotationLineInfo.get(10)
+                    val codons = annotationLineInfo.get(11)
+                    val outInfo = "${transcript}\t${mutationType}\t${proteinPosition}\t${aminoAcid}\t${codons}"
                     if (chrGmap.equals(chrAnno)) {
                         if (regexLocation1.toRegex().containsMatchIn(chrom)) {
                             startAnno = getSpecificSubUtilSimple(chrom, regexLocation1, 2).toInt()
                             endAnno = getSpecificSubUtilSimple(chrom, regexLocation1, 3).toInt()
-                            if (strandGmap.equals("+") && (refStartGmap <= startAnno) && (endAnno <= refEndGmap)) {
-                                outLine = transcriptID_gmap+"\t"+chrGmap+"\t"+altBase+"\t"+strandGmap+"\t"+trinityStartGmap+"\t"+trinityEndGmap+"\t"+refStartGmap+"\t"+refEndGmap+"\t"+startAnno+"\t"+endAnno+"\t"+outInfo+"\n"
+                            if ("+".equals(strandGmap) && (refStartGmap <= startAnno) && (endAnno <= refEndGmap)) {
+                                outLine = "${transcriptID_gmap}\t${chrGmap}\t${altBase}\t${strandGmap}\t${trinityStartGmap}\t${trinityEndGmap}\t${refStartGmap}\t${refEndGmap}\t${startAnno}\t${endAnno}\t${outInfo}\n"
                                 appendFile(outLine, MutatedTranscriptFile)
                                 continue@loop
-                            } else if (strandGmap.equals("-") && (refEndGmap <= startAnno) && (endAnno <= refStartGmap)) {
-                                outLine = transcriptID_gmap+"\t"+chrGmap+"\t"+altBase+"\t"+strandGmap+"\t"+trinityStartGmap+"\t"+trinityEndGmap+"\t"+refStartGmap+"\t"+refEndGmap+"\t"+startAnno+"\t"+endAnno+"\t"+outInfo+"\n"
+                            } else if ("-".equals(strandGmap) && (refEndGmap <= startAnno) && (endAnno <= refStartGmap)) {
+                                outLine = "${transcriptID_gmap}\t${chrGmap}\t${altBase}\t${strandGmap}\t${trinityStartGmap}\t${trinityEndGmap}\t${refStartGmap}\t${refEndGmap}\t${startAnno}\t${endAnno}\t${outInfo}\n"
                                 appendFile(outLine, MutatedTranscriptFile)
                                 continue@loop
                             }
@@ -171,12 +174,12 @@ class MutatedTranscript(){
                             locationAnno = getSpecificSubUtilSimple(chrom, regexLocation2, 2).toInt()
                             startAnno = locationAnno
                             val endReplaceAnno = "-"
-                            if (strandGmap.equals("+") && (refStartGmap <= locationAnno) && (locationAnno <= refEndGmap)) {
-                                outLine = transcriptID_gmap+"\t"+chrGmap+"\t"+altBase+"\t"+strandGmap+"\t"+trinityStartGmap+"\t"+trinityEndGmap+"\t"+refStartGmap+"\t"+refEndGmap+"\t"+startAnno+"\t"+endReplaceAnno+"\t"+outInfo+"\n"
+                            if ("+".equals(strandGmap) && (refStartGmap <= locationAnno) && (locationAnno <= refEndGmap)) {
+                                outLine = "${transcriptID_gmap}\t${chrGmap}\t${altBase}\t${strandGmap}\t${trinityStartGmap}\t${trinityEndGmap}\t${refStartGmap}\t${refEndGmap}\t${startAnno}\t${endAnno}\t${outInfo}\n"
                                 appendFile(outLine, MutatedTranscriptFile)
                                 continue@loop
-                            } else if (strandGmap.equals("-") && (refEndGmap <= locationAnno) && (locationAnno <= refStartGmap)) {
-                                outLine = transcriptID_gmap+"\t"+chrGmap+"\t"+altBase+"\t"+strandGmap+"\t"+trinityStartGmap+"\t"+trinityEndGmap+"\t"+refStartGmap+"\t"+refEndGmap+"\t"+startAnno+"\t"+endReplaceAnno+"\t"+outInfo+"\n"
+                            } else if ("-".equals(strandGmap) && (refEndGmap <= locationAnno) && (locationAnno <= refStartGmap)) {
+                                outLine = "${transcriptID_gmap}\t${chrGmap}\t${altBase}\t${strandGmap}\t${trinityStartGmap}\t${trinityEndGmap}\t${refStartGmap}\t${refEndGmap}\t${startAnno}\t${endAnno}\t${outInfo}\n"
                                 appendFile(outLine, MutatedTranscriptFile)
                                 continue@loop
                             }

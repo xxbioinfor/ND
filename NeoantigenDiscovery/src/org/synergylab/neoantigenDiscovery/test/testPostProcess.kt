@@ -2,7 +2,7 @@ package org.synergylab.neoantigenDiscovery.test
 
 import org.synergylab.neoantigenDiscovery.NeoantigenTranscript.PostProcess.generateTranscriptTranslation
 import org.synergylab.neoantigenDiscovery.NeoantigenTranscript.PostProcess.gmapReference
-import org.synergylab.neoantigenDiscovery.NeoantigenTranscript.Prediction.generateSomaticMutation
+//import org.synergylab.neoantigenDiscovery.NeoantigenTranscript.Prediction.generateSomaticMutation
 import org.synergylab.neoantigenDiscovery.utils.*
 
 fun main(args: Array<String>) {

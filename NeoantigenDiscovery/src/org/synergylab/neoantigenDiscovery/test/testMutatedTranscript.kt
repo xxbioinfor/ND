@@ -5,7 +5,7 @@ import org.synergylab.neoantigenDiscovery.NeoantigenTranscript.PostProcess.Mutat
 
 fun main(args: Array<String>) {
     //println(" Generate Gmap Reference... ")
-    val gmapReference = MutatedTranscript().generateGmapReference("/Users/toby/Desktop/neoantigenData/gmap_test_a")
+    //val gmapReference = MutatedTranscript().generateGmapReference("/Users/toby/Desktop/neoantigenData/gmap_test_a")
     //val mutatedTranscript = MutatedTranscript().generateMutatedTranscript(gmapReference)
 
 }

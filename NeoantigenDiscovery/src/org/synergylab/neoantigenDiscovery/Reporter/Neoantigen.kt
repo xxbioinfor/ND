@@ -24,8 +24,9 @@ fun main(args: Array<String>) {
     val cancerSample = "cancer"
     val controlSample = "control"
     val cleanCancerFile = RawFile().trimmomaticCommand(rawCancerSequence1,rawCancerSequence2,cancerSample,sampleID,cleanCancerSampleDir)
-    val cleanCancerSequence1 = cleanCancerFile.split("\t").get(0)
-    val cleanCancerSequence2 = cleanCancerFile.split("\t").get(1)
+    val cleanCancerFileSplit = cleanCancerFile.split("\t")
+    val cleanCancerSequence1 = cleanCancerFileSplit.get(0)
+    val cleanCancerSequence2 = cleanCancerFileSplit.get(1)
     val fastqcCancerSequence1 = RawFile().fastqcCommand(cleanCancerSequence1,cleanCancerSampleDir)
     val fastqcCancerSequence2 = RawFile().fastqcCommand(cleanCancerSequence2,cleanCancerSampleDir)
 
@@ -33,8 +34,9 @@ fun main(args: Array<String>) {
     val rawControlSequence2 = ProjectPath.rawControlSequence_2
     val cleanControlSampleDir = ProjectPath.cleanControlSampleDir
     val cleanControlFile = RawFile().trimmomaticCommand(rawControlSequence1,rawControlSequence2,controlSample,sampleID,cleanControlSampleDir)
-    val cleanControlSequence1 = cleanControlFile.split("\t").get(0)
-    val cleanControlSequence2 = cleanControlFile.split("\t").get(1)
+    val cleanControlFileSplit = cleanControlFile.split("\t")
+    val cleanControlSequence1 = cleanControlFileSplit.get(0)
+    val cleanControlSequence2 = cleanControlFileSplit.get(1)
     val fastqcControlSequence1 = RawFile().fastqcCommand(cleanControlSequence1,cleanControlSampleDir)
     val fastqcControlSequence2 = RawFile().fastqcCommand(cleanControlSequence2,cleanControlSampleDir)
 
@@ -105,22 +107,19 @@ fun main(args: Array<String>) {
     println(" Filter Info! ")
     println(" Generate HLA Type... ")
     val hlaFile = generateHlaType(cleanCancerSequence1,cleanCancerSequence2,sampleDir)
-    val hlaType1 = getFileLines(hlaFile).get(1).split("\t").get(1)  //文件提取
-    val hlaType2 = getFileLines(hlaFile).get(1).split("\t").get(3)
-    var hlaType = ""
-    if (hlaType1.equals(hlaType2)) {
-        hlaType = hlaType1
-    }
-    else hlaType = hlaType1+","+hlaType2
+    val hlaLine = getFileLines(hlaFile).get(1).split("\t")
+    val hlaType1 = hlaLine.get(1)  //文件提取
+    val hlaType2 = hlaLine.get(3)
+    val hlaType = if (hlaType1.equals(hlaType2)) {hlaType1 } else {"${hlaType1},${hlaType2}"}
     println(" Generate HLA Type: "+hlaType+"! ")
-    for (i in 8..11) {
-        println(" Generate "+i+"-mers Peptides Fasta File... ")
+    for ( i in 8..11) {
+        println(" Generate ${i}-mers Peptides Fasta File... ")
         val pepDir = ProjectPath.peptideDir
         val peptideFasta = PeptideFasta().generatePeptideFasta(fpkmFilter, i, pepDir)
-        println(" Generate "+i+"-mers Peptides Fasta File! ")
-        println(" Predict "+i+"-mers Peptide／MHC Binding Affinities...")
+        println(" Generate ${i}-mers Peptides Fasta File! ")
+        println(" Predict ${i}-mers Peptide／MHC Binding Affinities...")
         val affinityPrediction = bindingPrediction(peptideFasta,hlaType, sampleID, pepDir)
-        println(" Predict "+i+"-mers Peptide／MHC Binding Affinities! ")
+        println(" Predict ${i}-mers Peptide／MHC Binding Affinities! ")
         val affinityFilter = Filter().filterBindingAffinity(affinityPrediction,hlaType,pepDir)
     }
     val neoantigen = ""

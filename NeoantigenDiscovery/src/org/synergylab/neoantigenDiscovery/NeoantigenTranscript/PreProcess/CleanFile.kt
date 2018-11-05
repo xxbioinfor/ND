@@ -7,21 +7,24 @@ import org.synergylab.neoantigenDiscovery.utils.RemoteExecuteCommand
 
 class CleanFile(){
     val rec = RemoteExecuteCommand(ProjectPath.linuxIP,ProjectPath.linuxName,ProjectPath.linuxPwd)
+    val hisat2 = ProjectPath.hisat2
+    val thread = ProjectPath.thread
+    val hisat2Index = ProjectPath.hisat2Index
+    val samtools = ProjectPath.samtools
 
     fun generateSamFile(cleanFile1: String,cleanFile2: String,sampleID: String,outDir: String): String {
 
-        rec.execute(ProjectPath.hisat2+" -p "+ProjectPath.thread+" -x "+ProjectPath.hisat2Index
-                +" -1 "+cleanFile1+" -2 "+cleanFile2+" -S "+outDir+sampleID+".sam")
-        val samFile = outDir+sampleID+".sam"
+        rec.execute("${hisat2} -p ${thread} -x ${hisat2Index} -1 ${cleanFile1} -2 ${cleanFile2} -S ${outDir}${sampleID}.sam")
+        val samFile = "${outDir}${sampleID}.sam"
         return samFile
     }
 
     fun generateBamFile(samFile: String,sampleID: String,outDir: String): String {
 
-        rec.execute(ProjectPath.samtools+" view -S -b "+samFile+" | " +ProjectPath.samtools+" sort | "
-                +ProjectPath.samtools+" view -h | perl -ne 'if(/HI:i:(\\d+)/) { \$m=\$m1-1; \$_ =~ s/HI:i:(\\d+)/HI:i:\$m/} print \$_;' | "
-                +ProjectPath.samtools+" view -bS - > "+outDir+sampleID+".bam")
-        val bamFile = outDir+sampleID+".bam"
+        rec.execute("${samtools} view -S -b ${samFile} | ${samtools} sort | ${samtools} view -h | " +
+                "perl -ne 'if(/HI:i:(\\d+)/) { \$m=\$m1-1; \$_ =~ s/HI:i:(\\d+)/HI:i:\$m/} print \$_;' | " +
+                "{samtools} view -bS -> ${outDir}${sampleID}.bam")
+        val bamFile = "${outDir}${sampleID}.bam"
         return bamFile
     }
 

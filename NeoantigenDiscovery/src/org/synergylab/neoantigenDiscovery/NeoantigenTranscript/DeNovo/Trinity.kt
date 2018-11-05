@@ -8,18 +8,19 @@ import org.synergylab.neoantigenDiscovery.utils.RemoteExecuteCommand
 
 class Trinity() {
     val rec = RemoteExecuteCommand(ProjectPath.linuxIP, ProjectPath.linuxName, ProjectPath.linuxPwd)
-
+    val trinity = ProjectPath.trinity
+    val thread = ProjectPath.thread
     fun DeNovoTranscript(cleanFile1: String, cleanFile2: String, outDir: String): String {
-        rec.execute(ProjectPath.trinity+"Trinity --seqType fq --max_memory 20G --left "+cleanFile1+" --right "
-                +cleanFile2+" --CPU "+ProjectPath.thread+" --output "+outDir+"trinity")
-        return outDir+"trinity/Trinity.fasta"
+        rec.execute("${trinity}Trinity --seqType fq --max_memory 20G --left ${cleanFile1} --right ${cleanFile2}" +
+                " --CPU ${thread} --output ${outDir}trinity")
+        return "${outDir}trinity/Trinity.fasta"
     }
 
     fun DeNovoExpression(trinityFile: String,cleanFile1: String,cleanFile2: String,outDir: String): String {
-        rec.execute(ProjectPath.trinity+"util/align_and_estimate_abundance.pl --transcript "+trinityFile
-                +" --seqType fq --left "+cleanFile1+" --right "+cleanFile2+" --est_method RSEM --aln_method bowtie2 --prep_reference --trinity_mode --output_dir "
-                +outDir+"trinity")
-        return outDir+"trinity/RSEM.isoforms.results"
+        rec.execute("${trinity}util/align_and_estimate_abundance.pl --transcript ${trinityFile} --seqType fq " +
+                "--left ${cleanFile1} --right ${cleanFile2} --est_method RSEM --aln_method bowtie2 --prep_reference " +
+                "--trinity_mode --output_dir ${outDir}trinity")
+        return "${outDir}trinity/RSEM.isoforms.results"
     }
 
 /*
